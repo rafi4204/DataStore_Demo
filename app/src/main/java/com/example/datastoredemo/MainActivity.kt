@@ -36,13 +36,20 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        binding.btnRead.setOnClickListener {
-            lifecycleScope.launch {
-                 read().collect {
-                     binding.tvValue.text = it
-                 }
 
+
+        lifecycleScope.launch {
+            read().collect {
+                setValue(it)
             }
+
+        }
+
+    }
+
+    private fun setValue(value: String) {
+        binding.btnRead.setOnClickListener {
+            binding.tvValue.text = value
         }
 
     }
