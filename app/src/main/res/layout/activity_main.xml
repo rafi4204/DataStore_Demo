@@ -9,6 +9,7 @@
 
 
     <EditText
+        android:visibility="gone"
         android:id="@+id/etKey"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -41,6 +42,7 @@
         app:layout_constraintTop_toBottomOf="@+id/etValue" />
 
     <EditText
+        android:visibility="gone"
         android:id="@+id/etKey2"
         android:layout_width="0dp"
         android:layout_height="wrap_content"

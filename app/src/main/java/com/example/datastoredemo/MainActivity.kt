@@ -1,18 +1,19 @@
 package com.example.datastoredemo
 
 import android.content.Context
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
+import androidx.datastore.dataStore
 import androidx.lifecycle.lifecycleScope
-
 import com.example.datastoredemo.databinding.ActivityMainBinding
-import kotlinx.coroutines.flow.first
+import com.example.datastoredemo.serializer.SettingsProtoSerializer
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.io.IOException
 
 
 class MainActivity : AppCompatActivity() {
@@ -20,7 +21,10 @@ class MainActivity : AppCompatActivity() {
     private var _binding: ActivityMainBinding? = null
     private val binding get() = _binding!!
 
-    val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
+    val Context.dataStore: DataStore<SettingsProto> by dataStore(
+        fileName = "settings",
+        serializer = SettingsProtoSerializer
+    )
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         _binding = ActivityMainBinding.inflate(layoutInflater)
@@ -28,29 +32,40 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnSave.setOnClickListener {
             lifecycleScope.launch {
-                save(binding.etKey.text.toString(), binding.etValue.text.toString())
+                save(binding.etValue.text.toString())
             }
         }
 
         binding.btnRead.setOnClickListener {
             lifecycleScope.launch {
-                val value = read(binding.etKey2.text.toString())
-                binding.tvValue.text = value ?: "No Value Found"
+                 read().collect {
+                     binding.tvValue.text = it
+                 }
+
             }
         }
 
     }
 
-    private suspend fun save(key: String, value: String) {
-        val dataStoreKey = stringPreferencesKey(key)
-        dataStore.edit { settings ->
-            settings[dataStoreKey] = value
+    private suspend fun save(value: String) {
+        dataStore.updateData {store ->
+            store.toBuilder()
+                .setMessage(value)
+                .build()
         }
     }
 
-    private suspend fun read(key: String): String? {
-        val dataStoreKey = stringPreferencesKey(key)
-        val preferences = dataStore.data.first()
-        return preferences[dataStoreKey]
+    private suspend fun read(): Flow<String> {
+       return dataStore.data
+            .catch { exception ->
+                // dataStore.data throws an IOException when an error is encountered when reading data
+                if (exception is IOException) {
+                    emit(SettingsProto.getDefaultInstance())
+                } else {
+                    throw exception
+                }
+            }.map { protoBuilder ->
+                protoBuilder.message
+            }
     }
 }

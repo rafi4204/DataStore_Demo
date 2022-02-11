@@ -1,0 +1,8 @@
+syntax = "proto3";
+option java_package = "com.example.datastoredemo";
+option java_multiple_files = true;
+message SettingsProto {
+  bool isDarkTheme = 1;
+  int32 appVersion = 2;
+  string message = 3;
+}
